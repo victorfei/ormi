@@ -16,6 +16,7 @@ module.exports = {
     ecmaVersion: 12,
   },
   rules: {
+    "quotes": [2, "single", { "avoidEscape": true }],
     "node/no-unsupported-features/es-syntax": [
       "error",
       { ignores: ["modules"] },
