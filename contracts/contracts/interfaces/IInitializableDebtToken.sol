@@ -5,51 +5,47 @@ import {ILendingPool} from './ILendingPool.sol';
 import {IOrmiIncentivesController} from './IOrmiIncentivesController.sol';
 
 /**
- * @title IInitializableOToken
- * @notice Interface for the initialize function on oToken
+ * @title IInitializableDebtToken
+ * @notice Interface for the initialize function common between debt tokens
  * @author Ormi
  **/
-interface IInitializableOToken {
+interface IInitializableDebtToken {
   /**
-   * @dev Emitted when an oToken is initialized
+   * @dev Emitted when a debt token is initialized
    * @param underlyingAsset The address of the underlying asset
    * @param pool The address of the associated lending pool
-   * @param treasury The address of the treasury
    * @param incentivesController The address of the incentives controller for this oToken
-   * @param oTokenDecimals the decimals of the underlying
-   * @param oTokenName the name of the oToken
-   * @param oTokenSymbol the symbol of the oToken
+   * @param debtTokenDecimals the decimals of the debt token
+   * @param debtTokenName the name of the debt token
+   * @param debtTokenSymbol the symbol of the debt token
    * @param params A set of encoded parameters for additional initialization
    **/
   event Initialized(
     address indexed underlyingAsset,
     address indexed pool,
-    address treasury,
     address incentivesController,
-    uint8 oTokenDecimals,
-    string oTokenName,
-    string oTokenSymbol,
+    uint8 debtTokenDecimals,
+    string debtTokenName,
+    string debtTokenSymbol,
     bytes params
   );
 
   /**
-   * @dev Initializes the oToken
+   * @dev Initializes the debt token.
    * @param pool The address of the lending pool where this oToken will be used
-   * @param treasury The address of the Aave treasury, receiving the fees on this oToken
    * @param underlyingAsset The address of the underlying asset of this oToken (E.g. WETH for aWETH)
    * @param incentivesController The smart contract managing potential incentives distribution
-   * @param oTokenDecimals The decimals of the oToken, same as the underlying asset's
-   * @param oTokenName The name of the oToken
-   * @param oTokenSymbol The symbol of the oToken
+   * @param debtTokenDecimals The decimals of the debtToken, same as the underlying asset's
+   * @param debtTokenName The name of the token
+   * @param debtTokenSymbol The symbol of the token
    */
   function initialize(
     ILendingPool pool,
-    address treasury,
     address underlyingAsset,
-    IAaveIncentivesController incentivesController,
-    uint8 oTokenDecimals,
-    string calldata oTokenName,
-    string calldata oTokenSymbol,
+    IOrmiIncentivesController incentivesController,
+    uint8 debtTokenDecimals,
+    string memory debtTokenName,
+    string memory debtTokenSymbol,
     bytes calldata params
   ) external;
 }

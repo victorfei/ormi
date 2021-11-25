@@ -147,7 +147,7 @@ interface ILendingPool {
    * @param debtToCover The debt amount of borrowed `asset` the liquidator wants to cover
    * @param liquidatedCollateralAmount The amount of collateral received by the liiquidator
    * @param liquidator The address of the liquidator
-   * @param receiveAToken `true` if the liquidators wants to receive the collateral oTokens, `false` if he wants
+   * @param receiveOToken `true` if the liquidators wants to receive the collateral oTokens, `false` if he wants
    * to receive the underlying collateral asset directly
    **/
   event LiquidationCall(
@@ -157,7 +157,7 @@ interface ILendingPool {
     uint256 debtToCover,
     uint256 liquidatedCollateralAmount,
     address liquidator,
-    bool receiveAToken
+    bool receiveOToken
   );
 
   /**
@@ -292,7 +292,7 @@ interface ILendingPool {
    * @param debtAsset The address of the underlying borrowed asset to be repaid with the liquidation
    * @param user The address of the borrower getting liquidated
    * @param debtToCover The debt amount of borrowed `asset` the liquidator wants to cover
-   * @param receiveAToken `true` if the liquidators wants to receive the collateral oTokens, `false` if he wants
+   * @param receiveOToken `true` if the liquidators wants to receive the collateral oTokens, `false` if he wants
    * to receive the underlying collateral asset directly
    **/
   function liquidationCall(
@@ -300,7 +300,7 @@ interface ILendingPool {
     address debtAsset,
     address user,
     uint256 debtToCover,
-    bool receiveAToken
+    bool receiveOToken
   ) external;
 
   /**

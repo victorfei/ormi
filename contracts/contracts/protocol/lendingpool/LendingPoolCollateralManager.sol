@@ -3,7 +3,7 @@ pragma solidity 0.8.0;
 
 import {SafeMath} from '../../dependencies/openzeppelin/contracts//SafeMath.sol';
 import {IERC20} from '../../dependencies/openzeppelin/contracts//IERC20.sol';
-import {IAToken} from '../../interfaces/IAToken.sol';
+import {IOToken} from '../../interfaces/IOToken.sol';
 import {IStableDebtToken} from '../../interfaces/IStableDebtToken.sol';
 import {IVariableDebtToken} from '../../interfaces/IVariableDebtToken.sol';
 import {IPriceOracleGetter} from '../../interfaces/IPriceOracleGetter.sol';
@@ -50,8 +50,8 @@ contract LendingPoolCollateralManager is
     uint256 maxCollateralToLiquidate;
     uint256 debtAmountNeeded;
     uint256 healthFactor;
-    uint256 liquidatorPreviousATokenBalance;
-    IAToken collateralAtoken;
+    uint256 liquidatorPreviousOTokenBalance;
+    IOToken collateralOToken;
     bool isCollateralEnabled;
     DataTypes.InterestRateMode borrowRateMode;
     uint256 errorCode;
@@ -75,7 +75,7 @@ contract LendingPoolCollateralManager is
    * @param debtAsset The address of the underlying borrowed asset to be repaid with the liquidation
    * @param user The address of the borrower getting liquidated
    * @param debtToCover The debt amount of borrowed `asset` the liquidator wants to cover
-   * @param receiveAToken `true` if the liquidators wants to receive the collateral aTokens, `false` if he wants
+   * @param receiveOToken `true` if the liquidators wants to receive the collateral oTokens, `false` if he wants
    * to receive the underlying collateral asset directly
    **/
   function liquidationCall(
@@ -83,7 +83,7 @@ contract LendingPoolCollateralManager is
     address debtAsset,
     address user,
     uint256 debtToCover,
-    bool receiveAToken
+    bool receiveOToken
   ) external override returns (uint256, string memory) {
     DataTypes.ReserveData storage collateralReserve = _reserves[collateralAsset];
     DataTypes.ReserveData storage debtReserve = _reserves[debtAsset];
@@ -115,9 +115,9 @@ contract LendingPoolCollateralManager is
       return (vars.errorCode, vars.errorMsg);
     }
 
-    vars.collateralAtoken = IAToken(collateralReserve.aTokenAddress);
+    vars.collateralOToken = IOToken(collateralReserve.oTokenAddress);
 
-    vars.userCollateralBalance = vars.collateralAtoken.balanceOf(user);
+    vars.userCollateralBalance = vars.collateralOToken.balanceOf(user);
 
     vars.maxLiquidatableDebt = vars.userStableDebt.add(vars.userVariableDebt).percentMul(
       LIQUIDATION_CLOSE_FACTOR_PERCENT
@@ -149,9 +149,9 @@ contract LendingPoolCollateralManager is
 
     // If the liquidator reclaims the underlying asset, we make sure there is enough available liquidity in the
     // collateral reserve
-    if (!receiveAToken) {
+    if (!receiveOToken) {
       uint256 currentAvailableCollateral =
-        IERC20(collateralAsset).balanceOf(address(vars.collateralAtoken));
+        IERC20(collateralAsset).balanceOf(address(vars.collateralOToken));
       if (currentAvailableCollateral < vars.maxCollateralToLiquidate) {
         return (
           uint256(Errors.CollateralManagerErrors.NOT_ENOUGH_LIQUIDITY),
@@ -185,16 +185,16 @@ contract LendingPoolCollateralManager is
 
     debtReserve.updateInterestRates(
       debtAsset,
-      debtReserve.aTokenAddress,
+      debtReserve.oTokenAddress,
       vars.actualDebtToLiquidate,
       0
     );
 
-    if (receiveAToken) {
-      vars.liquidatorPreviousATokenBalance = IERC20(vars.collateralAtoken).balanceOf(msg.sender);
-      vars.collateralAtoken.transferOnLiquidation(user, msg.sender, vars.maxCollateralToLiquidate);
+    if (receiveOToken) {
+      vars.liquidatorPreviousOTokenBalance = IERC20(vars.collateralOToken).balanceOf(msg.sender);
+      vars.collateralOToken.transferOnLiquidation(user, msg.sender, vars.maxCollateralToLiquidate);
 
-      if (vars.liquidatorPreviousATokenBalance == 0) {
+      if (vars.liquidatorPreviousOTokenBalance == 0) {
         DataTypes.UserConfigurationMap storage liquidatorConfig = _usersConfig[msg.sender];
         liquidatorConfig.setUsingAsCollateral(collateralReserve.id, true);
         emit ReserveUsedAsCollateralEnabled(collateralAsset, msg.sender);
@@ -203,13 +203,13 @@ contract LendingPoolCollateralManager is
       collateralReserve.updateState();
       collateralReserve.updateInterestRates(
         collateralAsset,
-        address(vars.collateralAtoken),
+        address(vars.collateralOToken),
         0,
         vars.maxCollateralToLiquidate
       );
 
-      // Burn the equivalent amount of aToken, sending the underlying to the liquidator
-      vars.collateralAtoken.burn(
+      // Burn the equivalent amount of oToken, sending the underlying to the liquidator
+      vars.collateralOToken.burn(
         user,
         msg.sender,
         vars.maxCollateralToLiquidate,
@@ -224,10 +224,10 @@ contract LendingPoolCollateralManager is
       emit ReserveUsedAsCollateralDisabled(collateralAsset, user);
     }
 
-    // Transfers the debt asset being repaid to the aToken, where the liquidity is kept
+    // Transfers the debt asset being repaid to the oToken, where the liquidity is kept
     IERC20(debtAsset).safeTransferFrom(
       msg.sender,
-      debtReserve.aTokenAddress,
+      debtReserve.oTokenAddress,
       vars.actualDebtToLiquidate
     );
 
@@ -238,7 +238,7 @@ contract LendingPoolCollateralManager is
       vars.actualDebtToLiquidate,
       vars.maxCollateralToLiquidate,
       msg.sender,
-      receiveAToken
+      receiveOToken
     );
 
     return (uint256(Errors.CollateralManagerErrors.NO_ERROR), Errors.LPCM_NO_ERRORS);
